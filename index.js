@@ -1,32 +1,55 @@
 // index.js
-// where your node app starts
+// Node.js Express application for the Timestamp Microservice
 
-// init project
-var express = require('express');
-var app = express();
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC 
-var cors = require('cors');
-app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
+// Enable CORS for all routes so that API is testable by freeCodeCamp
+app.use(cors({ optionsSuccessStatus: 200 }));
 
-// http://expressjs.com/en/starter/static-files.html
+// Serve static files from 'public' directory
 app.use(express.static('public'));
 
-// http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (req, res) {
+// Send the main file for the root route
+app.get("/", (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
 
-
-// your first API endpoint... 
-app.get("/api/hello", function (req, res) {
-  res.json({greeting: 'hello API'});
+// A simple API endpoint that returns a greeting
+app.get("/api/hello", (req, res) => {
+  res.json({ greeting: 'hello API' });
 });
 
+// Timestamp Microservice API endpoint
+app.get("/api/:date?", (req, res) => {
+  let dateString = req.params.date;
+  let date;
 
+  // If no date string is provided, use the current date
+  if (!dateString) {
+    date = new Date();
+  } else {
+    // Check if dateString is a Unix timestamp (contains only digits)
+    if (!isNaN(dateString) && /^\d+$/.test(dateString)) {
+      // Convert Unix timestamp to milliseconds and create a new date object
+      date = new Date(parseInt(dateString));
+    } else {
+      // Try to create a date object using the provided string
+      date = new Date(dateString);
+    }
+  }
 
-// Listen on port set in environment variable or default to 3000
-var listener = app.listen(process.env.PORT || 3000, function () {
+  // Validate the date object
+  if (date.toString() === "Invalid Date") {
+    res.json({ error: "Invalid Date" });
+  } else {
+    // Return the JSON response with both the Unix timestamp and UTC string
+    res.json({ unix: date.getTime(), utc: date.toUTCString() });
+  }
+});
+
+// Listen for requests on the port specified by the environment or default to 3000
+const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port);
 });
